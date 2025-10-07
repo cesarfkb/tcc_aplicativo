@@ -1,6 +1,9 @@
 import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
 import 'package:flutter_mjpeg/flutter_mjpeg.dart';
+import 'package:provider/provider.dart';
+
+import '../provider/server_config_provider.dart';
 import '../services/stream_service.dart';
 
 class LiveFeed extends StatefulWidget {
@@ -48,27 +51,36 @@ class _LiveFeedState extends State<LiveFeed> {
         body: Container(
       color: Colors.black,
       child: Center(
-        child: Mjpeg(
-            stream: StreamService.streamUrl,
-            isLive: true,
-            error: (context, error, stack) {
-              return const Column(
-                mainAxisAlignment: MainAxisAlignment.center,
-                children: [
-                  Icon(
-                    Icons.error_outline,
-                    color: Colors.white,
-                    size: 60,
-                  ),
-                  SizedBox(height: 16,),
-                  Text(
-                  'Erro ao carregar o stream',
-                  style: TextStyle(color: Colors.white),
-                    textAlign: TextAlign.center,
-                )],
-              );
-            },
-            fit: BoxFit.contain),
+        child: Consumer<ServerConfigProvider>(
+          builder: (context, config, _) {
+            final streamUrl = StreamService.streamUrl(config);
+            return Mjpeg(
+              stream: streamUrl,
+              isLive: true,
+              error: (context, error, stack) {
+                return const Column(
+                  mainAxisAlignment: MainAxisAlignment.center,
+                  children: [
+                    Icon(
+                      Icons.error_outline,
+                      color: Colors.white,
+                      size: 60,
+                    ),
+                    SizedBox(
+                      height: 16,
+                    ),
+                    Text(
+                      'Erro ao carregar o stream',
+                      style: TextStyle(color: Colors.white),
+                      textAlign: TextAlign.center,
+                    )
+                  ],
+                );
+              },
+              fit: BoxFit.contain,
+            );
+          },
+        ),
       ),
     ));
   }

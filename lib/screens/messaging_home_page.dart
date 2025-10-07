@@ -65,6 +65,8 @@ class _MessagingHomePageState extends State<MessagingHomePage> {
   String? _serverBaseUrl;
   bool _isSavingServerUrl = false;
   bool _isInitializing = true;
+  bool _isTestingConnection = false;
+  String? _connectionTestResult;
 
   late final TextEditingController _serverUrlController;
 
@@ -188,8 +190,7 @@ class _MessagingHomePageState extends State<MessagingHomePage> {
     try {
       if (mounted) {
         setState(() {
-          _registrationStatus =
-              'Registrando token no backend (${uri.host})…';
+          _registrationStatus = 'Registrando token no backend (${uri.host})…';
         });
       }
 
@@ -234,14 +235,15 @@ class _MessagingHomePageState extends State<MessagingHomePage> {
     }
 
     final parsed = Uri.tryParse(normalized);
-    final isValid = parsed != null && parsed.hasScheme && parsed.host.isNotEmpty;
+    final isValid =
+        parsed != null && parsed.hasScheme && parsed.host.isNotEmpty;
 
     if (!isValid) {
       if (!mounted) return;
       ScaffoldMessenger.of(context).showSnackBar(
         const SnackBar(
-          content:
-              Text('URL inválida. Use o formato completo, por exemplo: http://10.0.2.2:8000'),
+          content: Text(
+              'URL inválida. Use o formato completo, por exemplo: http://10.0.2.2:8000'),
         ),
       );
       return;
@@ -260,6 +262,7 @@ class _MessagingHomePageState extends State<MessagingHomePage> {
       _serverBaseUrl = normalized;
       _isSavingServerUrl = false;
       _registrationStatus = null;
+      _connectionTestResult = null;
     });
 
     ScaffoldMessenger.of(context).showSnackBar(
@@ -307,6 +310,51 @@ class _MessagingHomePageState extends State<MessagingHomePage> {
       return token;
     }
     return '${token.substring(0, visibleCharacters)}…';
+  }
+
+  Future<void> _testServerConnection() async {
+    final rawUrl = _serverUrlController.text.trim();
+    final normalized = _normalizeBaseUrl(rawUrl);
+    final uri = Uri.tryParse(normalized);
+
+    final invalidUrl =
+        normalized.isEmpty || uri == null || !uri.hasScheme || uri.host.isEmpty;
+
+    if (invalidUrl) {
+      if (!mounted) return;
+      ScaffoldMessenger.of(context).showSnackBar(
+        const SnackBar(
+          content: Text('Informe uma URL válida antes de testar a conexão.'),
+        ),
+      );
+      return;
+    }
+
+    setState(() {
+      _isTestingConnection = true;
+      _connectionTestResult = 'Testando conexão com $normalized…';
+    });
+
+    try {
+      final response = await http.get(uri);
+      if (!mounted) return;
+      setState(() {
+        final success = response.statusCode >= 200 && response.statusCode < 300;
+        final statusLabel = success ? 'sucesso' : 'falha';
+        _connectionTestResult =
+            'Resposta $statusLabel (HTTP ${response.statusCode}) de $normalized';
+      });
+    } catch (error) {
+      if (!mounted) return;
+      setState(() {
+        _connectionTestResult = 'Erro ao testar conexão: $error';
+      });
+    } finally {
+      if (!mounted) return;
+      setState(() {
+        _isTestingConnection = false;
+      });
+    }
   }
 
   @override
@@ -405,7 +453,9 @@ class _MessagingHomePageState extends State<MessagingHomePage> {
             onSubmitted: (_) => _saveServerUrl(),
           ),
           const SizedBox(height: 12),
-          Row(
+          Wrap(
+            spacing: 12,
+            runSpacing: 12,
             children: [
               ElevatedButton.icon(
                 onPressed: _isSavingServerUrl ? null : _saveServerUrl,
@@ -418,14 +468,34 @@ class _MessagingHomePageState extends State<MessagingHomePage> {
                     : const Icon(Icons.save),
                 label: const Text('Salvar'),
               ),
-              const SizedBox(width: 12),
               OutlinedButton.icon(
                 onPressed: _restoreDefaultServerUrl,
                 icon: const Icon(Icons.restart_alt),
                 label: const Text('Restaurar padrão'),
               ),
+              OutlinedButton.icon(
+                onPressed: _isTestingConnection ? null : _testServerConnection,
+                icon: _isTestingConnection
+                    ? const SizedBox(
+                        width: 16,
+                        height: 16,
+                        child: CircularProgressIndicator(strokeWidth: 2),
+                      )
+                    : const Icon(Icons.wifi_tethering),
+                label: const Text('Testar conexão'),
+              ),
             ],
           ),
+          if (_connectionTestResult != null) ...[
+            const SizedBox(height: 12),
+            Text(
+              _connectionTestResult!,
+              style: TextStyle(
+                fontSize: 12,
+                color: Theme.of(context).colorScheme.primary,
+              ),
+            ),
+          ],
           const SizedBox(height: 24),
           Card(
             child: Padding(
@@ -435,8 +505,7 @@ class _MessagingHomePageState extends State<MessagingHomePage> {
                 children: [
                   const Text(
                     'Configuração atual',
-                    style: TextStyle(
-                        fontSize: 16, fontWeight: FontWeight.bold),
+                    style: TextStyle(fontSize: 16, fontWeight: FontWeight.bold),
                   ),
                   const SizedBox(height: 8),
                   Text('Base URL: $base'),
