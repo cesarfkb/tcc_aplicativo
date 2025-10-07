@@ -13,6 +13,28 @@ import '../firebase_options.dart';
 
 const _serverUrlPreferenceKey = 'messaging_server_base_url';
 
+Future<void> main() async {
+  WidgetsFlutterBinding.ensureInitialized();
+  await _ensureFirebaseInitialized();
+  FirebaseMessaging.onBackgroundMessage(firebaseMessagingBackgroundHandler);
+  runApp(const MessagingApp());
+}
+
+class MessagingApp extends StatelessWidget {
+  const MessagingApp({super.key});
+
+  @override
+  Widget build(BuildContext context) {
+    return MaterialApp(
+      title: 'Firebase Messaging Demo',
+      theme: ThemeData(
+        colorScheme: ColorScheme.fromSeed(seedColor: Colors.indigo),
+      ),
+      home: const MessagingHomePage(),
+    );
+  }
+}
+
 Future<void> _ensureFirebaseInitialized() async {
   if (Firebase.apps.isEmpty) {
     await Firebase.initializeApp(
@@ -63,8 +85,6 @@ class _MessagingHomePageState extends State<MessagingHomePage> {
 
   Future<void> _initialize() async {
     await _loadServerBaseUrl();
-    await _ensureFirebaseInitialized();
-    FirebaseMessaging.onBackgroundMessage(firebaseMessagingBackgroundHandler);
     await _setupMessaging();
     if (mounted) {
       setState(() {
@@ -86,6 +106,7 @@ class _MessagingHomePageState extends State<MessagingHomePage> {
   }
 
   Future<void> _setupMessaging() async {
+    await _ensureFirebaseInitialized();
     final messaging = FirebaseMessaging.instance;
 
     final settings = await messaging.requestPermission(
@@ -280,6 +301,14 @@ class _MessagingHomePageState extends State<MessagingHomePage> {
     return value.endsWith('/') ? value.substring(0, value.length - 1) : value;
   }
 
+  String _truncateToken(String token) {
+    const visibleCharacters = 24;
+    if (token.length <= visibleCharacters) {
+      return token;
+    }
+    return '${token.substring(0, visibleCharacters)}…';
+  }
+
   @override
   Widget build(BuildContext context) {
     return DefaultTabController(
@@ -414,7 +443,9 @@ class _MessagingHomePageState extends State<MessagingHomePage> {
                   Text('Endpoint de registro: $registerUri'),
                   if ((_token ?? '').isNotEmpty) ...[
                     const SizedBox(height: 8),
-                    Text('Token atual: ${_token!.substring(0, 20)}…'),
+                    Text(
+                      'Token atual: ${_truncateToken(_token!)}',
+                    ),
                   ],
                   if (_registrationStatus != null) ...[
                     const SizedBox(height: 12),
