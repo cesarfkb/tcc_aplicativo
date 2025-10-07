@@ -1,4 +1,4 @@
 class StreamService {
   static const String streamUrl =
-      'http://localhost:8000/api/stream'; // URL do stream de vídeo
+      'http://localhost:7680/api/stream'; // URL do stream de vídeo
 }

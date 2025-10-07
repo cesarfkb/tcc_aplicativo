@@ -42,10 +42,9 @@ class HomePage extends StatelessWidget {
                   enlargeFactor: 0.2,
                 ),
                 items: [
-                  'https://placehold.co/600x400/orange/white/png',
-                  'https://placehold.co/600x400/blue/white/png',
-                  'https://placehold.co/600x400/green/white/png',
-                  'https://placehold.co/600x400/red/white/png',
+                  'assets/images/2.jpg',
+                  'assets/images/3.jpg',
+                  'http://localhost:7680/api/raw-snapshot',
                 ]
                     .map((item) => Builder(
                           builder: (BuildContext context) {
@@ -65,11 +64,21 @@ class HomePage extends StatelessWidget {
                               ),
                               child: ClipRRect(
                                 borderRadius: BorderRadius.circular(10),
-                                child: Image.network(
-                                  item,
-                                  fit: BoxFit.cover,
-                                  width: MediaQuery.of(context).size.width,
-                                ),
+                                child: item.startsWith('http')
+                                    ? Image.network(
+                                        item,
+                                        fit: BoxFit.cover,
+                                        width: double.infinity,
+                                        errorBuilder: (BuildContext context, Object exception, StackTrace? stackTrace) =>
+                                            const Center(
+                                          child: Icon(Icons.error),
+                                        ),
+                                      )
+                                    : Image.asset(
+                                        item,
+                                        fit: BoxFit.cover,
+                                        width: double.infinity,
+                                      ),
                               ),
                             );
                           },
@@ -88,9 +97,9 @@ class HomePage extends StatelessWidget {
               ListView.builder(
                 shrinkWrap: true,
                 physics: const NeverScrollableScrollPhysics(),
-                itemCount: 5, // Replace with your actual alert count
+                itemCount: 3, // Replace with your actual alert count
                 itemBuilder: (context, index) {
-                  // Using the first 5 alerts for demonstration
+                  // Using the first 3 alerts for demonstration
                   final alert = alerts[index];
                   // Don't use Urgente and Importante alerts
 
@@ -108,9 +117,9 @@ class HomePage extends StatelessWidget {
                                     : Colors.blue,
                       ),
                       title: Text(alert['title']),
+                      isThreeLine: true,
                       subtitle: Text(
-                          '${alert['description']}\n${alert['date'].toLocal()}'
-                              .split(' ')[0]),
+                          '${alert['description']}\n${alert['date'].toLocal().toString().split('.')[0]}'),
                       trailing: Icon(Icons.arrow_forward_ios,
                           color: Colors.grey[600]),
                     ),
