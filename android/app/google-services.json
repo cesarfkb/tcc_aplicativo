@@ -1,0 +1,29 @@
+{
+  "project_info": {
+    "project_number": "793799345883",
+    "project_id": "baba-eletronica-bd6bb",
+    "storage_bucket": "baba-eletronica-bd6bb.firebasestorage.app"
+  },
+  "client": [
+    {
+      "client_info": {
+        "mobilesdk_app_id": "1:793799345883:android:268dd51d68dc0374852efe",
+        "android_client_info": {
+          "package_name": "com.example.prototipo_tcc"
+        }
+      },
+      "oauth_client": [],
+      "api_key": [
+        {
+          "current_key": "AIzaSyCnbf27W2GCULvEXsBkMhTYuEvERSuVFXg"
+        }
+      ],
+      "services": {
+        "appinvite_service": {
+          "other_platform_oauth_client": []
+        }
+      }
+    }
+  ],
+  "configuration_version": "1"
+}
