@@ -24,7 +24,7 @@ class _MainScreenState extends State<MainScreen> {
 
   final List<Widget> _pages = [
     HomePage(), // Replace with your actual page widgets
-    const LiveFeed(),
+    LiveFeed(),
     const Alerts(),
   ];
 

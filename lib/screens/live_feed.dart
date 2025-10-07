@@ -47,12 +47,26 @@ class _LiveFeedState extends State<LiveFeed> {
     return Scaffold(
         body: Container(
       color: Colors.black,
-      child: SizedBox.expand(
+      child: Center(
         child: Mjpeg(
             stream: StreamService.streamUrl,
             isLive: true,
             error: (context, error, stack) {
-              return Text('Erro ao carregar o stream');
+              return const Column(
+                mainAxisAlignment: MainAxisAlignment.center,
+                children: [
+                  Icon(
+                    Icons.error_outline,
+                    color: Colors.white,
+                    size: 60,
+                  ),
+                  SizedBox(height: 16,),
+                  Text(
+                  'Erro ao carregar o stream',
+                  style: TextStyle(color: Colors.white),
+                    textAlign: TextAlign.center,
+                )],
+              );
             },
             fit: BoxFit.contain),
       ),
