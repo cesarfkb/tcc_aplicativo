@@ -38,6 +38,8 @@ dependencies:
   provider: ^6.1.5
   video_player: ^2.5.1
   flutter_mjpeg: ^2.0.0
+  firebase_messaging: ^16.0.2
+  firebase_core: ^4.1.1
 
 dev_dependencies:
   flutter_test:
@@ -61,6 +63,8 @@ flutter:
   uses-material-design: true
   assets:
     - assets/alerts.json
+    - assets/images/2.jpg
+    - assets/images/3.jpg
 
   # To add assets to your application, add an assets section, like this:
   # assets:
