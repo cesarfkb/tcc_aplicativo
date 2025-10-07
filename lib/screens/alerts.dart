@@ -17,23 +17,18 @@ class Alerts extends StatefulWidget {
 class _AlertsState extends State<Alerts> {
   String _selectedType = 'Todos';
   DateTime? _selectedDate;
-  late bool _includeImages;
 
   @override
   void initState() {
     super.initState();
     final provider = context.read<AlertsProvider>();
-    _includeImages = provider.includeImages;
     WidgetsBinding.instance.addPostFrameCallback((_) {
-      provider.fetchAlerts(reset: true, includeImages: _includeImages);
+      provider.fetchAlerts(reset: true);
     });
   }
 
   Future<void> _refresh() async {
-    await context.read<AlertsProvider>().fetchAlerts(
-          reset: true,
-          includeImages: _includeImages,
-        );
+    await context.read<AlertsProvider>().fetchAlerts(reset: true);
   }
 
   List<Map<String, dynamic>> _filteredAlerts(
@@ -331,6 +326,8 @@ class _AlertsState extends State<Alerts> {
   String? _extractBase64Image(Map<String, dynamic> alert) {
     final candidates = [
       alert['image'],
+      alert['image_b64'],
+      alert['image_b64'],
       alert['snapshot'],
       alert['frame'],
       alert['thumbnail'],
@@ -354,7 +351,6 @@ class _AlertsState extends State<Alerts> {
       builder: (context) {
         String tempType = _selectedType;
         DateTime? tempDate = _selectedDate;
-        bool tempIncludeImages = _includeImages;
         return StatefulBuilder(
           builder: (context, setModalState) {
             return Padding(
@@ -433,19 +429,6 @@ class _AlertsState extends State<Alerts> {
                     ],
                   ),
                   const SizedBox(height: 16),
-                  SwitchListTile(
-                    contentPadding: EdgeInsets.zero,
-                    title: const Text('Carregar imagens embutidas'),
-                    subtitle: const Text(
-                        'Ative para usar /api/events (pode ser mais pesado).'),
-                    value: tempIncludeImages,
-                    onChanged: (value) {
-                      setModalState(() {
-                        tempIncludeImages = value;
-                      });
-                    },
-                  ),
-                  const SizedBox(height: 16),
                   Row(
                     mainAxisAlignment: MainAxisAlignment.end,
                     children: [
@@ -461,7 +444,6 @@ class _AlertsState extends State<Alerts> {
                           setState(() {
                             _selectedType = tempType;
                             _selectedDate = tempDate;
-                            _includeImages = tempIncludeImages;
                           });
                           Navigator.of(context).pop();
                           _refresh();

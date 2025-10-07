@@ -39,7 +39,8 @@ class _MainScreenState extends State<MainScreen> {
       final alertsProvider = context.read<AlertsProvider>();
       final statusProvider = context.read<BackendStatusProvider>();
       final messagingProvider = context.read<MessagingProvider>();
-      alertsProvider.fetchAlerts();
+      alertsProvider.fetchSummaryAlerts();
+      alertsProvider.fetchAlerts(reset: true);
       statusProvider.refreshAll();
       messagingProvider.ensureInitialized();
     });

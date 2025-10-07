@@ -23,7 +23,7 @@ class AlertsProvider with ChangeNotifier {
   String? _error;
   String? _summaryError;
   int _offset = 0;
-  bool _includeImages = true;
+  bool _includeImages = false;
 
   List<Map<String, dynamic>> get alerts => _alerts;
   List<Map<String, dynamic>> get summaryAlerts => _summaryAlerts;
@@ -45,14 +45,13 @@ class AlertsProvider with ChangeNotifier {
 
   Future<void> fetchAlerts({
     bool reset = false,
-    bool? includeImages,
   }) async {
     final config = _serverConfig;
     if (config == null) return;
 
     var effectiveReset = reset;
-    if (includeImages != null && includeImages != _includeImages) {
-      _includeImages = includeImages;
+    if (_includeImages) {
+      _includeImages = false;
       effectiveReset = true;
     }
 
