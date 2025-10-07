@@ -149,9 +149,9 @@ class _AlertsState extends State<Alerts> {
                           : Colors.blue,
             ),
             title: Text(alert['title']),
-            subtitle: Text('${alert['description']}\n'
-                    '${alert['date'].toLocal()}'
-                .split(' ')[0]),
+            isThreeLine: true,
+            subtitle: Text(
+                '${alert['description']}\n${alert['date'].toLocal().toString().split('.')[0]}'),
           ),
         );
       },
@@ -172,13 +172,13 @@ class _AlertsState extends State<Alerts> {
               crossAxisAlignment: CrossAxisAlignment.start,
               children: [Expanded(child: _buildAlertList(alerts))],
             )),
-        Positioned(
-            top: 20,
-            right: 20,
-            child: FloatingActionButton(
-              onPressed: () => _showFilterModal(context),
-              child: const Icon(Icons.filter_list, color: Colors.black),
-            ))
+        // Positioned(
+        //     top: 20,
+        //     right: 20,
+        //     child: FloatingActionButton(
+        //       onPressed: () => _showFilterModal(context),
+        //       child: const Icon(Icons.filter_list, color: Colors.black),
+        //     ))
       ],
     ));
 

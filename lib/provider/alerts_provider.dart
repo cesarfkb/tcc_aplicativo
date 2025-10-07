@@ -29,4 +29,9 @@ class AlertsProvider with ChangeNotifier {
       notifyListeners();
     }
   }
+
+  void addAlert(Map<String, dynamic> newAlert) {
+    _alerts.insert(0, newAlert);
+    notifyListeners();
+  }
 }
