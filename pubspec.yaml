@@ -40,6 +40,8 @@ dependencies:
   flutter_mjpeg: ^2.0.0
   firebase_messaging: ^16.0.2
   firebase_core: ^4.1.1
+  http: ^1.2.2
+  shared_preferences: ^2.2.3
 
 dev_dependencies:
   flutter_test:
