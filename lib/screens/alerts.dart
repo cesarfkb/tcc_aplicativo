@@ -17,18 +17,22 @@ class Alerts extends StatefulWidget {
 class _AlertsState extends State<Alerts> {
   String _selectedType = 'Todos';
   DateTime? _selectedDate;
+  bool _includeImages = true;
 
   @override
   void initState() {
     super.initState();
     final provider = context.read<AlertsProvider>();
+    _includeImages = provider.includeImages;
     WidgetsBinding.instance.addPostFrameCallback((_) {
-      provider.fetchAlerts(reset: true);
+      provider.fetchAlerts(reset: true, includeImages: _includeImages);
     });
   }
 
   Future<void> _refresh() async {
-    await context.read<AlertsProvider>().fetchAlerts(reset: true);
+    await context
+        .read<AlertsProvider>()
+        .fetchAlerts(reset: true, includeImages: _includeImages);
   }
 
   List<Map<String, dynamic>> _filteredAlerts(
@@ -351,6 +355,7 @@ class _AlertsState extends State<Alerts> {
       builder: (context) {
         String tempType = _selectedType;
         DateTime? tempDate = _selectedDate;
+        bool tempIncludeImages = _includeImages;
         return StatefulBuilder(
           builder: (context, setModalState) {
             return Padding(
@@ -385,6 +390,19 @@ class _AlertsState extends State<Alerts> {
                     onChanged: (value) {
                       setModalState(() {
                         tempType = value ?? 'Todos';
+                      });
+                    },
+                  ),
+                  const SizedBox(height: 16),
+                  SwitchListTile(
+                    contentPadding: EdgeInsets.zero,
+                    title: const Text('Carregar imagens embutidas'),
+                    subtitle:
+                        const Text('Ative para usar /api/events com imagem.'),
+                    value: tempIncludeImages,
+                    onChanged: (value) {
+                      setModalState(() {
+                        tempIncludeImages = value;
                       });
                     },
                   ),
@@ -444,6 +462,7 @@ class _AlertsState extends State<Alerts> {
                           setState(() {
                             _selectedType = tempType;
                             _selectedDate = tempDate;
+                            _includeImages = tempIncludeImages;
                           });
                           Navigator.of(context).pop();
                           _refresh();

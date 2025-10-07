@@ -382,13 +382,15 @@ class HomePage extends StatelessWidget {
                   return ListTile(
                     contentPadding: EdgeInsets.zero,
                     leading: Icon(visuals.icon, color: visuals.color),
-                    title: Text(alert['title']?.toString() ?? 'Alerta'),
+                    title: Text(visuals.label),
                     subtitle: Text(
-                      visuals.label +
-                          '\n' +
-                          (alert['description'] ?? '') +
-                          '\n' +
-                          formattedDate,
+                      [
+                        if ((alert['title'] ?? '').toString().isNotEmpty)
+                          alert['title'].toString(),
+                        if ((alert['description'] ?? '').toString().isNotEmpty)
+                          alert['description'].toString(),
+                        formattedDate,
+                      ].join('\n'),
                     ),
                   );
                 }).toList(),
