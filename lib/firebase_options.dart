@@ -63,6 +63,6 @@ class DefaultFirebaseOptions {
     messagingSenderId: '793799345883',
     projectId: 'baba-eletronica-bd6bb',
     storageBucket: 'baba-eletronica-bd6bb.firebasestorage.app',
-    iosBundleId: 'com.example.prototipoTcc',
+    iosBundleId: 'com.example.sonare',
   );
 }

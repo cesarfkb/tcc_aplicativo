@@ -1,4 +1,4 @@
-package com.example.prototipo_tcc
+package com.example.sonare
 
 import io.flutter.embedding.android.FlutterActivity
 

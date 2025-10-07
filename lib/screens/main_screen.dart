@@ -20,7 +20,7 @@ class _MainScreenState extends State<MainScreen> {
   int _currentIndex = 0;
   late final List<Widget> _pages;
   final List<String> _titles = [
-    'Baba Eletronica',
+    'Sonare',
     '',
     'Alertas',
     'Configuracoes',

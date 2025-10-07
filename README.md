@@ -1,4 +1,4 @@
-# prototipo_tcc
+# Sonare
 
 A new Flutter project.
 

@@ -1,6 +1,6 @@
 {
-    "name": "prototipo_tcc",
-    "short_name": "prototipo_tcc",
+    "name": "Sonare",
+    "short_name": "Sonare",
     "start_url": ".",
     "display": "standalone",
     "background_color": "#0175C2",
