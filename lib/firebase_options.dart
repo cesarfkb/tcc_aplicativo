@@ -59,10 +59,11 @@ class DefaultFirebaseOptions {
 
   static const FirebaseOptions ios = FirebaseOptions(
     apiKey: 'AIzaSyBoalmFs4tZNkfNYAlMZqs_HX-57OWUaRM',
-    appId: '1:793799345883:ios:1a5d2d31f9715c2a852efe',
+    appId: '1:793799345883:ios:414598ebddcb063b852efe',
     messagingSenderId: '793799345883',
     projectId: 'baba-eletronica-bd6bb',
     storageBucket: 'baba-eletronica-bd6bb.firebasestorage.app',
-    iosBundleId: 'com.example.sonare',
+    iosBundleId: 'com.example.prototipoTcc',
   );
+
 }

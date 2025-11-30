@@ -1,6 +1,7 @@
 import 'dart:convert';
 
 import 'package:firebase_messaging/firebase_messaging.dart';
+import 'package:flutter/foundation.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
 import 'package:http/http.dart' as http;
@@ -66,7 +67,26 @@ class MessagingProvider with ChangeNotifier {
       sound: true,
     );
 
-    final token = await messaging.getToken();
+    String? token;
+
+    if (defaultTargetPlatform == TargetPlatform.iOS || defaultTargetPlatform == TargetPlatform.macOS) {
+      debugPrint("iOS/macOS platform detected, trying to get APNs token...");
+      String? apnsToken = await messaging.getAPNSToken();
+      if (apnsToken == null) {
+        debugPrint("APNs token not available yet. Will rely on FCM SDK to get it later.");
+        // Do not try to get the FCM token here.
+        // The onTokenRefresh listener or a subsequent call will handle it
+        // once the APNs token is ready.
+      } else {
+        // If we have the APNs token, it's now safe to get the FCM token.
+        debugPrint("APNs token received. Getting FCM token.");
+        token = await messaging.getToken();
+      }
+    } else {
+      // For other platforms (like Android), we can get the token directly.
+      token = await messaging.getToken();
+    }
+
     final initialMessage = await messaging.getInitialMessage();
 
     FirebaseMessaging.instance.onTokenRefresh.listen((newToken) {
