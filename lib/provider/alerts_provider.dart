@@ -23,7 +23,8 @@ class AlertsProvider with ChangeNotifier {
   String? _error;
   String? _summaryError;
   int _offset = 0;
-  bool _includeImages = true;
+  bool _includeImages = false;
+  final Map<String, Uint8List?> _imageCache = {};
 
   List<Map<String, dynamic>> get alerts => _alerts;
   List<Map<String, dynamic>> get summaryAlerts => _summaryAlerts;
@@ -38,6 +39,7 @@ class AlertsProvider with ChangeNotifier {
   void updateServerConfig(ServerConfigProvider config) {
     final shouldReload = _serverConfig?.baseUrl != config.baseUrl;
     _serverConfig = config;
+    _imageCache.clear();
     if (shouldReload) {
       fetchAlerts(reset: true);
     }
@@ -64,6 +66,7 @@ class AlertsProvider with ChangeNotifier {
       _hasMore = true;
       _offset = 0;
       _alerts = [];
+      _imageCache.clear();
       notifyListeners();
     } else {
       if (!_hasMore || _isLoading || _isLoadingMore) return;
@@ -173,7 +176,49 @@ class AlertsProvider with ChangeNotifier {
     if (!normalized.containsKey('id') && raw['uuid'] != null) {
       normalized['id'] = raw['uuid'];
     }
+    final imagePath = _extractImagePath(raw);
+    if (imagePath != null) {
+      normalized['image_path'] = imagePath;
+    }
     return normalized;
+  }
+
+  Future<Uint8List?> fetchEventImage(Map<String, dynamic> alert) async {
+    final config = _serverConfig;
+    if (config == null) return null;
+
+    final path = _extractImagePath(alert);
+    final cacheKey = _resolveImageCacheKey(alert, path);
+
+    if (cacheKey != null && _imageCache.containsKey(cacheKey)) {
+      return _imageCache[cacheKey];
+    }
+
+    if (path == null || path.isEmpty) return null;
+
+    final uri = config
+        .buildUri('/api/events/image/raw')
+        .replace(queryParameters: {'image_path': path});
+
+    try {
+      final response = await _client.get(uri);
+      if (response.statusCode >= 200 && response.statusCode < 300) {
+        final bytes = response.bodyBytes;
+        if (cacheKey != null) {
+          _imageCache[cacheKey] = bytes;
+        }
+        return bytes;
+      }
+      if (cacheKey != null) {
+        _imageCache[cacheKey] = null;
+      }
+      debugPrint(
+        'Falha ao carregar imagem (HTTP ${response.statusCode}): ${response.reasonPhrase}',
+      );
+    } catch (error, stackTrace) {
+      debugPrint('Erro ao carregar imagem: $error\n$stackTrace');
+    }
+    return null;
   }
 
   DateTime _extractDate(Map<String, dynamic> raw) {
@@ -232,5 +277,34 @@ class AlertsProvider with ChangeNotifier {
       ...uri.queryParameters,
       'limit': limit.toString(),
     });
+  }
+
+  String? _extractImagePath(Map<String, dynamic> raw) {
+    final candidates = [
+      raw['image_path'],
+      raw['imagePath'],
+      raw['image_file'],
+      raw['image'],
+      raw['frame_path'],
+    ];
+
+    for (final candidate in candidates) {
+      if (candidate is! String) continue;
+      final trimmed = candidate.trim();
+      if (trimmed.isEmpty) continue;
+      // Ignore likely base64 blobs.
+      if (trimmed.length > 500) continue;
+      return trimmed;
+    }
+    return null;
+  }
+
+  String? _resolveImageCacheKey(Map<String, dynamic> raw, String? path) {
+    if (raw['id'] != null) return raw['id'].toString();
+    if (raw['uuid'] != null) return raw['uuid'].toString();
+    if (path != null && path.isNotEmpty) return path;
+    final date = raw['date'];
+    if (date is DateTime) return '${raw['type'] ?? 'event'}_${date.millisecondsSinceEpoch}';
+    return null;
   }
 }

@@ -17,7 +17,7 @@ class Alerts extends StatefulWidget {
 class _AlertsState extends State<Alerts> {
   String _selectedType = 'Todos';
   DateTime? _selectedDate;
-  bool _includeImages = true;
+  bool _includeImages = false;
 
   @override
   void initState() {
@@ -35,12 +35,56 @@ class _AlertsState extends State<Alerts> {
         .fetchAlerts(reset: true, includeImages: _includeImages);
   }
 
+  String _normalizeFilterValue(String value) {
+    switch (value.trim().toLowerCase()) {
+      case 'todos':
+        return 'todos';
+      case 'info':
+      case 'informativo':
+      case 'notice':
+        return 'info';
+      case 'leve':
+      case 'low':
+      case 'minor':
+        return 'leve';
+      case 'importante':
+      case 'medium':
+      case 'moderado':
+      case 'warning':
+        return 'importante';
+      case 'urgente':
+      case 'high':
+      case 'critical':
+      case 'major':
+      case 'severe':
+        return 'urgente';
+      default:
+        return value.trim().toLowerCase();
+    }
+  }
+
   List<Map<String, dynamic>> _filteredAlerts(
       List<Map<String, dynamic>> alerts) {
+    final selectedLevel = _normalizeFilterValue(_selectedType);
     return alerts.where((alert) {
-      final type = (alert['type'] ?? 'Info').toString();
-      final matchesType = _selectedType == 'Todos' ||
-          type.toLowerCase() == _selectedType.toLowerCase();
+      final levelCandidates = [
+        if (alert.containsKey('level')) alert['level'],
+        if (alert.containsKey('severity')) alert['severity'],
+      ];
+      String normalizedAlertLevel = '';
+      for (final candidate in levelCandidates) {
+        if (candidate == null) continue;
+        final normalizedCandidate = _normalizeFilterValue(candidate.toString());
+        if (normalizedCandidate.isNotEmpty) {
+          normalizedAlertLevel = normalizedCandidate;
+          break;
+        }
+      }
+      if (normalizedAlertLevel.isEmpty && alert['type'] != null) {
+        normalizedAlertLevel = _normalizeFilterValue(alert['type'].toString());
+      }
+      final matchesType =
+          selectedLevel == 'todos' || normalizedAlertLevel == selectedLevel;
 
       final date = alert['date'];
       DateTime? eventDate;
@@ -161,15 +205,7 @@ class _AlertsState extends State<Alerts> {
 
     final description = (alert['description'] ?? '').toString();
     final title = alert['title']?.toString();
-    Uint8List? previewBytes;
-    final base64Image = _extractBase64Image(alert);
-    if (base64Image != null) {
-      try {
-        previewBytes = base64Decode(base64Image);
-      } catch (_) {
-        previewBytes = null;
-      }
-    }
+    final previewWidget = _buildAlertPreview(context, alert);
 
     return Card(
       margin: const EdgeInsets.symmetric(vertical: 6),
@@ -179,20 +215,7 @@ class _AlertsState extends State<Alerts> {
         child: Column(
           crossAxisAlignment: CrossAxisAlignment.start,
           children: [
-            if (previewBytes != null)
-              AspectRatio(
-                aspectRatio: 4 / 3,
-                child: Image.memory(
-                  previewBytes,
-                  width: double.infinity,
-                  fit: BoxFit.cover,
-                  errorBuilder: (context, error, stackTrace) => Container(
-                    color: Colors.black12,
-                    alignment: Alignment.center,
-                    child: const Icon(Icons.broken_image_outlined),
-                  ),
-                ),
-              ),
+            if (previewWidget != null) previewWidget,
             ListTile(
               leading: Icon(visuals.icon, color: visuals.color),
               title: Text(visuals.label),
@@ -214,28 +237,7 @@ class _AlertsState extends State<Alerts> {
   void _showAlertDetails(BuildContext context, Map<String, dynamic> alert) {
     final type = (alert['type'] ?? 'Info').toString();
     final visuals = resolveEventVisuals(type);
-    final base64Image = _extractBase64Image(alert);
-    Widget? imageWidget;
-    if (base64Image != null) {
-      try {
-        final bytes = base64Decode(base64Image);
-        imageWidget = Padding(
-          padding: const EdgeInsets.only(top: 12),
-          child: ClipRRect(
-            borderRadius: BorderRadius.circular(12),
-            child: Image.memory(
-              bytes,
-              fit: BoxFit.cover,
-            ),
-          ),
-        );
-      } catch (_) {
-        imageWidget = const Padding(
-          padding: EdgeInsets.only(top: 12),
-          child: Text('Nao foi possivel decodificar a imagem deste evento.'),
-        );
-      }
-    }
+    final imageWidget = _buildImageSection(context, alert);
 
     showModalBottomSheet(
       context: context,
@@ -327,6 +329,117 @@ class _AlertsState extends State<Alerts> {
     return result;
   }
 
+  Widget? _buildAlertPreview(
+      BuildContext context, Map<String, dynamic> alert) {
+    final base64Image = _extractBase64Image(alert);
+    if (base64Image != null) {
+      try {
+        final bytes = base64Decode(base64Image);
+        return AspectRatio(
+          aspectRatio: 4 / 3,
+          child: Image.memory(
+            bytes,
+            width: double.infinity,
+            fit: BoxFit.cover,
+            errorBuilder: (context, error, stackTrace) => Container(
+              color: Colors.black12,
+              alignment: Alignment.center,
+              child: const Icon(Icons.broken_image_outlined),
+            ),
+          ),
+        );
+      } catch (_) {
+        // Fallback to remote fetch below.
+      }
+    }
+
+    final imagePath = _extractImagePath(alert);
+    if (imagePath == null) return null;
+
+    return FutureBuilder<Uint8List?>(
+      future: context.read<AlertsProvider>().fetchEventImage(alert),
+      builder: (context, snapshot) {
+        if (snapshot.connectionState == ConnectionState.waiting) {
+          return const SizedBox(
+            height: 160,
+            child: Center(child: CircularProgressIndicator()),
+          );
+        }
+        final bytes = snapshot.data;
+        if (bytes == null || bytes.isEmpty) {
+          return const SizedBox.shrink();
+        }
+        return AspectRatio(
+          aspectRatio: 4 / 3,
+          child: Image.memory(
+            bytes,
+            width: double.infinity,
+            fit: BoxFit.cover,
+            errorBuilder: (context, error, stackTrace) => Container(
+              color: Colors.black12,
+              alignment: Alignment.center,
+              child: const Icon(Icons.broken_image_outlined),
+            ),
+          ),
+        );
+      },
+    );
+  }
+
+  Widget? _buildImageSection(
+      BuildContext context, Map<String, dynamic> alert) {
+    final base64Image = _extractBase64Image(alert);
+    if (base64Image != null) {
+      try {
+        final bytes = base64Decode(base64Image);
+        return Padding(
+          padding: const EdgeInsets.only(top: 12),
+          child: ClipRRect(
+            borderRadius: BorderRadius.circular(12),
+            child: Image.memory(
+              bytes,
+              fit: BoxFit.cover,
+            ),
+          ),
+        );
+      } catch (_) {
+        // Fall through to attempt raw fetch below.
+      }
+    }
+
+    final imagePath = _extractImagePath(alert);
+    if (imagePath == null) return null;
+
+    return FutureBuilder<Uint8List?>(
+      future: context.read<AlertsProvider>().fetchEventImage(alert),
+      builder: (context, snapshot) {
+        if (snapshot.connectionState == ConnectionState.waiting) {
+          return const Padding(
+            padding: EdgeInsets.only(top: 12),
+            child: Center(child: CircularProgressIndicator()),
+          );
+        }
+        final bytes = snapshot.data;
+        if (bytes == null || bytes.isEmpty) {
+          return const Padding(
+            padding: EdgeInsets.only(top: 12),
+            child: Text('Imagem nao disponivel para este evento.'),
+          );
+        }
+        return Padding(
+          padding: const EdgeInsets.only(top: 12),
+          child: ClipRRect(
+            borderRadius: BorderRadius.circular(12),
+            child: Image.memory(
+              bytes,
+              fit: BoxFit.cover,
+            ),
+          ),
+        );
+      },
+    );
+  }
+
   String? _extractBase64Image(Map<String, dynamic> alert) {
     final candidates = [
       alert['image'],
@@ -344,6 +457,23 @@ class _AlertsState extends State<Alerts> {
         if (isBase64) {
           return sanitized;
         }
+      }
+    }
+    return null;
+  }
+
+  String? _extractImagePath(Map<String, dynamic> alert) {
+    final candidates = [
+      alert['image_path'],
+      alert['imagePath'],
+      alert['image_file'],
+      alert['frame_path'],
+      alert['image'],
+    ];
+    for (final candidate in candidates) {
+      if (candidate is String && candidate.trim().isNotEmpty) {
+        if (candidate.length > 500) continue;
+        return candidate.trim();
       }
     }
     return null;
@@ -397,8 +527,9 @@ class _AlertsState extends State<Alerts> {
                   SwitchListTile(
                     contentPadding: EdgeInsets.zero,
                     title: const Text('Carregar imagens embutidas'),
-                    subtitle:
-                        const Text('Ative para usar /api/events com imagem.'),
+                    subtitle: const Text(
+                      'Ative para usar /api/events com imagem (payload maior).',
+                    ),
                     value: tempIncludeImages,
                     onChanged: (value) {
                       setModalState(() {

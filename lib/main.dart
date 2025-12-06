@@ -45,10 +45,16 @@ void main() async {
           create: (context) => MessagingProvider(
             context.read<AlertsProvider>(),
             context.read<ServerConfigProvider>(),
+            scaffoldMessengerKey,
           ),
           update: (context, alerts, server, previous) {
-            final provider = previous ?? MessagingProvider(alerts, server);
-            provider.updateDependencies(alerts, server);
+            final provider =
+                previous ?? MessagingProvider(alerts, server, scaffoldMessengerKey);
+            provider.updateDependencies(
+              alerts,
+              server,
+              messengerKey: scaffoldMessengerKey,
+            );
             return provider;
           },
         ),
@@ -69,8 +75,12 @@ class MyApp extends StatelessWidget {
         colorScheme: ColorScheme.fromSeed(seedColor: Colors.deepPurple),
         useMaterial3: true,
       ),
+      scaffoldMessengerKey: scaffoldMessengerKey,
       home: const MainScreen(),
       debugShowCheckedModeBanner: false,
     );
   }
 }
+
+final GlobalKey<ScaffoldMessengerState> scaffoldMessengerKey =
+    GlobalKey<ScaffoldMessengerState>();
